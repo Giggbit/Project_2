@@ -2,6 +2,8 @@
 #include <windowsX.h>
 #include <commctrl.h>
 #include <tchar.h>
+#include <conio.h>
+#include <time.h>
 #include"resource.h"
 #pragma comment(lib,"comctl32")
 
@@ -11,11 +13,14 @@
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 PNOTIFYICONDATA pNID;
-HWND hTime, hLevel, hDialog, hText;
-HWND hModalDialog;		
+HWND hTime, hLevel, hDialog, hText, hEnterText, hFinish;
+HWND hEdit1, hEdit2, hEdit3;
+HWND hModalDialog;	
 HICON hIcon;
 HANDLE hMutex;
+HANDLE hThread;
 TCHAR str_time[50];
+TCHAR str[100];
 
 TCHAR lvl1[] = TEXT("аоао оаоа ааоо ооаа оаао аооа");
 TCHAR lvl2[] = TEXT("влвл лвлв ввлл ллвв вллв лввл");
@@ -27,35 +32,42 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPTSTR lpszCmdLin
 	return DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
 }
 
-//DWORD WINAPI ThreadTime(LPVOID lp) {
-//	HWND hProgress = (HWND)lp;
-//	struct Time {
-//		int Minutes = 2;
-//		int Seconds = 30;
-//	} Time;
-//
-//	while (TRUE) {
-//		wsprintf(str_time, TEXT("%d:%d"), Time.Minutes, Time.Seconds);
-//		SetWindowText(hTime, str_time);
-//		if (Time.Seconds <= 0) {
-//			Time.Seconds = 60;
-//			if (Time.Minutes <= 0) {
-//				Time.Seconds--;
-//				MessageBox(hTime, TEXT("Время вышло :("), TEXT("Это конец"), MB_OK | MB_ICONINFORMATION);
-//				return 0;
-//			}
-//			else {
-//				Time.Seconds--;
-//				Time.Minutes--;
-//			}
-//		}
-//		else {
-//			Time.Seconds--;
-//		}
-//		Sleep(1000);
-//	}
-//	return 0;
-//}
+void OnTrayIcon(WPARAM wp, LPARAM lp) {
+	if (lp == WM_LBUTTONDBLCLK) {
+		Shell_NotifyIcon(NIM_DELETE, pNID); // Удаляем иконку из трэя
+		ShowWindow(hDialog, SW_NORMAL); // Восстанавливаем окно
+		SetForegroundWindow(hDialog); // устанавливаем окно на передний план
+	}
+}
+
+void Cls_OnSize(HWND hwnd, UINT state, int cx, int cy) {
+	if (state == SIZE_MINIMIZED) {
+		ShowWindow(hwnd, SW_HIDE); // Прячем окно
+		Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
+	}
+}
+
+DWORD WINAPI TimeFunc(LPVOID lp) {
+	HWND hProgress = (HWND)lp;
+	struct Time {
+		int Minutes = 0;
+		int Seconds = 0;
+	} Time;
+
+	while (TRUE) {
+		wsprintf(str_time, TEXT("%d:%d"), Time.Minutes, Time.Seconds);
+		SetWindowText(hTime, str_time);
+		if (Time.Seconds >= 60) {
+			Time.Seconds = 00;
+			Time.Minutes++;
+		}
+		else {
+			Time.Seconds++;
+		}
+		Sleep(1000);
+	}
+	return 0;
+}
 
 BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -63,8 +75,11 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG: {
 		hTime = GetDlgItem(hWnd, IDC_TIME);
+		hEdit1 = GetDlgItem(hWnd, IDC_EDIT1);
 		hLevel = GetDlgItem(hWnd, IDC_LEVEL);
 		hText = GetDlgItem(hWnd, IDC_TEXT); 
+		hEnterText = GetDlgItem(hWnd, IDC_ENTERTEXT);
+		hFinish = GetDlgItem(hWnd, IDOK);
 		hDialog = hWnd;
 
 		// Получим дескриптор экземпляра приложения
@@ -77,6 +92,8 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//pNID->hWnd = hWnd; //дескриптор окна, которое будет получать уведомляющие сообщения, ассоциированные с иконкой в трэе.	
 		//pNID->uCallbackMessage = WM_ICON;
 		//pNID->uFlags = NIF_TIP | NIF_ICON | NIF_MESSAGE | NIF_INFO;
+		//pNID->uID = ID_TRAYICON;
+
 
 		TCHAR GUID[] = TEXT("{D99CD3E0-670D-4def-9B74-99FD7E793DFB}");
 		hMutex = CreateMutex(NULL, FALSE, GUID);
@@ -126,25 +143,37 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetWindowText(hText, lvl5);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("5")));
 			}
+
+			hThread = CreateThread(NULL, 0, TimeFunc, hTime, 0, NULL);
+		}
+
+		if (LPARAM(wParam) == IDOK) {
+			CloseHandle(hThread);
+			EndDialog(hModalDialog, 0);
+			hWnd = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG1), hWnd, DLGPROC(DlgProc));
+			ShowWindow(hWnd, SW_RESTORE);
+			SendMessage(hEdit1, WM_SETTEXT, 0, LPARAM(str_time));
 		}
 
 	}
 	break;
 
-	/*case WM_TIMER:
-		
-	break;*/
+	//case WM_SIZE: {
+	//	if (message == SIZE_MINIMIZED) {
+	//		ShowWindow(hWnd, SW_HIDE); // Прячем окно
+	//		Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
+	//	}
+	//}
+	//break;
 
-	case WM_SIZE: {
-		if (message == SIZE_MINIMIZED) {
-			ShowWindow(hWnd, SW_HIDE); // Прячем окно
-			Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
-		}
-	}
-	break;
+	HANDLE_MSG(hWnd, WM_SIZE, Cls_OnSize);
 
 	case WM_CLOSE:
 		EndDialog(hWnd, 0);
+		return TRUE;
+	}
+	if (message == WM_ICON) {
+		OnTrayIcon(wParam, lParam);
 		return TRUE;
 	}
 	return FALSE;

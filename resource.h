@@ -8,7 +8,7 @@
 #define IDC_EDIT1                       1001
 #define IDC_EDIT2                       1002
 #define IDC_EDIT3                       1003
-#define IDC_LIST1                       1004
+#define IDC_EDIT4                       1004 
 #define IDC_START                       1005
 #define IDC_TIME                        1006
 #define IDC_LEVEL                       1007
@@ -52,6 +52,8 @@
 #define IDC_SPACE                       1041
 #define IDC_EDIT                        1042
 #define IDC_TEXT                        1042
+#define IDC_TEXT2                       1043
+#define IDC_ENTERTEXT                   1043
 
 // Next default values for new objects
 // 
@@ -59,7 +61,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1043
+#define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
