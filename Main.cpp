@@ -9,24 +9,37 @@
 
 #define WM_ICON WM_APP
 #define ID_TRAYICON WM_USER
+#define WM_USER_SHELLICON (WM_USER + 1)
 
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 PNOTIFYICONDATA pNID;
+NOTIFYICONDATA data;
+
 HWND hTime, hLevel, hDialog, hText, hEnterText, hFinish;
 HWND hEdit1, hEdit2, hEdit3;
-HWND hModalDialog;	
+HWND hButton16;
+HWND hModalDialog, hResultDialog;
+
 HICON hIcon;
+
 HANDLE hMutex;
 HANDLE hThread;
+
 TCHAR str_time[50];
-TCHAR str[100];
+TCHAR str_result[100];
+TCHAR str_text[50];
+TCHAR str_timer[50];
+
+int points = 0;
+int error = 0;
 
 TCHAR lvl1[] = TEXT("аоао оаоа ааоо ооаа оаао аооа");
 TCHAR lvl2[] = TEXT("влвл лвлв ввлл ллвв вллв лввл");
 TCHAR lvl3[] = TEXT("прпр рпрп ппрр ррпп рппр пррп");
 TCHAR lvl4[] = TEXT("кеке екек ккее еекк кеек екке");
 TCHAR lvl5[] = TEXT("нгнг гнгн ннгг ггнн нггн гннг");
+TCHAR str_lvl[10];
 
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPTSTR lpszCmdLine, int nCmdShow) {
 	return DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
@@ -76,23 +89,35 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG: {
 		hTime = GetDlgItem(hWnd, IDC_TIME);
 		hEdit1 = GetDlgItem(hWnd, IDC_EDIT1);
+		hEdit2 = GetDlgItem(hWnd, IDC_EDIT2);
+		hEdit3 = GetDlgItem(hWnd, IDC_EDIT3);
 		hLevel = GetDlgItem(hWnd, IDC_LEVEL);
 		hText = GetDlgItem(hWnd, IDC_TEXT); 
 		hEnterText = GetDlgItem(hWnd, IDC_ENTERTEXT);
 		hFinish = GetDlgItem(hWnd, IDOK);
 		hDialog = hWnd;
+		hButton16 = GetDlgItem(hWnd, IDC_BUTTON16);
 
 		// Получим дескриптор экземпляра приложения
 		HINSTANCE hInst = GetModuleHandle(NULL);
-		hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)); // загружаем иконку
+		pNID->cbSize = sizeof(NOTIFYICONDATA); //размер структуры
+		memset(pNID, 0, sizeof(NOTIFYICONDATA)); //Обнуление структуры
+		pNID->hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)); //загружаем пользовательскую иконку
 		SetClassLong(hDialog, GCL_HICON, LONG(hIcon)); // устанавливаем иконку в главном окне приложения
-		//memset(pNID, 0, sizeof(NOTIFYICONDATA)); //Обнуление структуры
-		//pNID->cbSize = sizeof(NOTIFYICONDATA); //размер структуры
-		//pNID->hIcon = hIcon; //загружаем пользовательскую иконку
-		//pNID->hWnd = hWnd; //дескриптор окна, которое будет получать уведомляющие сообщения, ассоциированные с иконкой в трэе.	
-		//pNID->uCallbackMessage = WM_ICON;
-		//pNID->uFlags = NIF_TIP | NIF_ICON | NIF_MESSAGE | NIF_INFO;
-		//pNID->uID = ID_TRAYICON;
+		pNID->hWnd = hDialog; //дескриптор окна, которое будет получать уведомляющие сообщения, ассоциированные с иконкой в трэе.	
+		pNID->uCallbackMessage = WM_ICON;
+		pNID->uFlags = NIF_TIP | NIF_ICON | NIF_MESSAGE | NIF_INFO;
+		pNID->uID = ID_TRAYICON;
+
+		
+		/*data.cbSize = sizeof(NOTIFYICONDATA);
+		data.hWnd = hWnd;
+		data.uID = ID_TRAYICON;
+		data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+		data.uCallbackMessage = WM_USER_SHELLICON;
+		data.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+		data.uVersion = NOTIFYICON_VERSION;
+		Shell_NotifyIcon(NIM_ADD, &data);*/
 
 
 		TCHAR GUID[] = TEXT("{D99CD3E0-670D-4def-9B74-99FD7E793DFB}");
@@ -118,55 +143,114 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				ShowWindow(hModalDialog, SW_RESTORE);
 				SetWindowText(hText, lvl1);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("1")));
+				wsprintf(str_lvl, TEXT("%s"), TEXT("1"));
 			}
 			if (result2 == BST_CHECKED) {
 				hModalDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hWnd, DLGPROC(DlgProc));
 				ShowWindow(hModalDialog, SW_RESTORE);
 				SetWindowText(hText, lvl2);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("2")));
+				wsprintf(str_lvl, TEXT("%s"), TEXT("2"));
 			}
 			if (result3 == BST_CHECKED) {
 				hModalDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hWnd, DLGPROC(DlgProc));
 				ShowWindow(hModalDialog, SW_RESTORE);
 				SetWindowText(hText, lvl3);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("3")));
+				wsprintf(str_lvl, TEXT("%s"), TEXT("3"));
 			}
 			if (result4 == BST_CHECKED) {
 				hModalDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hWnd, DLGPROC(DlgProc));
 				ShowWindow(hModalDialog, SW_RESTORE);
 				SetWindowText(hText, lvl4);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("4")));
+				wsprintf(str_lvl, TEXT("%s"), TEXT("4"));
 			}
 			if (result5 == BST_CHECKED) {
 				hModalDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hWnd, DLGPROC(DlgProc));
 				ShowWindow(hModalDialog, SW_RESTORE);
 				SetWindowText(hText, lvl5);
 				SendMessage(hLevel, WM_SETTEXT, 0, LPARAM(TEXT("5")));
+				wsprintf(str_lvl, TEXT("%s"), TEXT("5"));
 			}
 
 			hThread = CreateThread(NULL, 0, TimeFunc, hTime, 0, NULL);
+
+			TCHAR str_1[10] = TEXT("1");
+			TCHAR str_2[10] = TEXT("2");
+			TCHAR str_3[10] = TEXT("3");
+			TCHAR str_4[10] = TEXT("4");
+			TCHAR str_5[10] = TEXT("5");
+
+			int compare = _tcscmp(str_lvl, str_1);
+			if (compare == 0) {
+				wsprintf(str_text, TEXT("%s"), lvl1);
+			}
+			else {
+				compare = _tcscmp(str_lvl, str_2);
+				if (compare == 0) {
+					wsprintf(str_text, TEXT("%s"), lvl2);
+				}
+				else {
+					compare = _tcscmp(str_lvl, str_3);
+					if (compare == 0) {
+						wsprintf(str_text, TEXT("%s"), lvl3);
+					}
+					else {
+						compare = _tcscmp(str_lvl, str_4);
+						if (compare == 0) {
+							wsprintf(str_text, TEXT("%s"), lvl4);
+						}
+						else {
+							compare = _tcscmp(str_lvl, str_5);
+							wsprintf(str_text, TEXT("%s"), lvl5);
+						}
+					}
+				}
+			}
+			
 		}
 
 		if (LPARAM(wParam) == IDOK) {
+			points = 0;
+			error = 0;
+
+			int count_result = GetWindowTextLength(hEnterText);
+			GetWindowText(hEnterText, str_result, count_result + 1);
+			for (int i = 0; i < 30; i++) {
+				if (str_result[i] == str_text[i]) {
+					points++;
+				}
+				else {
+					error++;
+				}
+			}
+			TCHAR str_points[10];
+			wsprintf(str_points, TEXT("%d"), points);
+			TCHAR str_error[10];
+			wsprintf(str_error, TEXT("%d"), error);
+
 			CloseHandle(hThread);
 			EndDialog(hModalDialog, 0);
-			hWnd = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG1), hWnd, DLGPROC(DlgProc));
-			ShowWindow(hWnd, SW_RESTORE);
+			hResultDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG3), hWnd, DLGPROC(DlgProc));
+			ShowWindow(hResultDialog, SW_RESTORE);
 			SendMessage(hEdit1, WM_SETTEXT, 0, LPARAM(str_time));
+			SendMessage(hEdit2, WM_SETTEXT, 0, LPARAM(str_error));
+			SendMessage(hEdit3, WM_SETTEXT, 0, LPARAM(str_points));
+
 		}
 
 	}
 	break;
 
-	//case WM_SIZE: {
-	//	if (message == SIZE_MINIMIZED) {
-	//		ShowWindow(hWnd, SW_HIDE); // Прячем окно
-	//		Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
-	//	}
-	//}
-	//break;
-
-	HANDLE_MSG(hWnd, WM_SIZE, Cls_OnSize);
+	case WM_SIZE: {
+		if (message == SIZE_MINIMIZED) {
+			ShowWindow(hWnd, SW_HIDE); // Прячем окно
+			Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
+		}
+	}
+	break;
+	//HANDLE_MSG(hWnd, WM_SIZE, Cls_OnSize);
 
 	case WM_CLOSE:
 		EndDialog(hWnd, 0);
