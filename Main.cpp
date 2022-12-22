@@ -110,16 +110,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		pNID->uID = ID_TRAYICON;
 
 		
-		/*data.cbSize = sizeof(NOTIFYICONDATA);
-		data.hWnd = hWnd;
-		data.uID = ID_TRAYICON;
-		data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-		data.uCallbackMessage = WM_USER_SHELLICON;
-		data.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
-		data.uVersion = NOTIFYICON_VERSION;
-		Shell_NotifyIcon(NIM_ADD, &data);*/
-
-
 		TCHAR GUID[] = TEXT("{D99CD3E0-670D-4def-9B74-99FD7E793DFB}");
 		hMutex = CreateMutex(NULL, FALSE, GUID);
 		DWORD dwAnswer = WaitForSingleObject(hMutex, 0);
