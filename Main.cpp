@@ -1,35 +1,28 @@
-#include<windows.h>
-#include <windowsX.h>
-#include <commctrl.h>
-#include <tchar.h>
-#include <conio.h>
-#include <time.h>
-#include"resource.h"
-#pragma comment(lib,"comctl32")
+#include "Main.h"
 
 #define WM_ICON WM_APP
 #define ID_TRAYICON WM_USER
-#define WM_USER_SHELLICON (WM_USER + 1)
 
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 PNOTIFYICONDATA pNID;
-NOTIFYICONDATA data;
 
 HWND hTime, hLevel, hDialog, hText, hEnterText, hFinish;
 HWND hEdit1, hEdit2, hEdit3;
-HWND hButton16;
+HWND hButtonA, hButtonO, hButtonV, hButtonL, hButtonP, hButtonR, hButtonK, hButtonE, hButtonN, hButtonG, hSpace;
 HWND hModalDialog, hResultDialog;
 
 HICON hIcon;
+HHOOK hHook;
 
 HANDLE hMutex;
-HANDLE hThread;
+HANDLE hThread, hThreadBtclk;
 
 TCHAR str_time[50];
 TCHAR str_result[100];
 TCHAR str_text[50];
 TCHAR str_timer[50];
+TCHAR str_button[3];
 
 int points = 0;
 int error = 0;
@@ -58,6 +51,114 @@ void Cls_OnSize(HWND hwnd, UINT state, int cx, int cy) {
 		ShowWindow(hwnd, SW_HIDE); // Прячем окно
 		Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
 	}
+}
+
+void Check_Level_1(TCHAR *buf, int i) {
+	if (buf[i] == 'F') {
+		Button_Enable(hButtonA, FALSE);
+		Button_Enable(hButtonO, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == 'J') {
+		Button_Enable(hButtonO, FALSE);
+		Button_Enable(hButtonA, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == ' ') {
+		Button_Enable(hSpace, FALSE);
+		Button_Enable(hButtonA, TRUE);
+		Button_Enable(hButtonO, TRUE);
+	}
+}
+void Check_Level_2(TCHAR* buf, int i) {
+	if (buf[i] == 'D') {
+		Button_Enable(hButtonV, FALSE);
+		Button_Enable(hButtonL, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == 'K') {
+		Button_Enable(hButtonL, FALSE);
+		Button_Enable(hButtonV, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == ' ') {
+		Button_Enable(hButtonL, TRUE);
+		Button_Enable(hButtonV, TRUE);
+		Button_Enable(hSpace, FALSE);
+	}
+}
+void Check_Level_3(TCHAR* buf, int i) {
+	if (buf[i] == 'G') {
+		Button_Enable(hButtonP, FALSE);
+		Button_Enable(hButtonR, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == 'H') {
+		Button_Enable(hButtonR, FALSE);
+		Button_Enable(hButtonP, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == ' ') {
+		Button_Enable(hButtonP, TRUE);
+		Button_Enable(hButtonR, TRUE);
+		Button_Enable(hSpace, FALSE);
+	}
+}
+void Check_Level_4(TCHAR* buf, int i) {
+	if (buf[i] == 'R') {
+		Button_Enable(hButtonK, FALSE);
+		Button_Enable(hButtonE, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == 'T') {
+		Button_Enable(hButtonE, FALSE);
+		Button_Enable(hButtonK, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == ' ') {
+		Button_Enable(hButtonE, TRUE);
+		Button_Enable(hButtonK, TRUE);
+		Button_Enable(hSpace, FALSE);
+	}
+}
+void Check_Level_5(TCHAR* buf, int i) {
+	if (buf[i] == 'Y') {
+		Button_Enable(hButtonN, FALSE);
+		Button_Enable(hButtonG, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == 'U') {
+		Button_Enable(hButtonG, FALSE);
+		Button_Enable(hButtonN, TRUE);
+		Button_Enable(hSpace, TRUE);
+	}
+	else if (buf[i] == ' ') {
+		Button_Enable(hButtonN, TRUE);
+		Button_Enable(hButtonG, TRUE);
+		Button_Enable(hSpace, FALSE);
+	}
+}
+
+LRESULT CALLBACK KeyboardProc(int idCode, WPARAM wParam, LPARAM lParam)
+{
+	if (HC_ACTION == idCode) {
+		HWND hWnd = GetFocus();
+		TCHAR buf[40], text[65536];
+		GetClassName(hWnd, buf, 40);
+		if (lstrcmpi(buf, L"EDIT") == 0 && (lParam & 0x80000000)) {
+			int i = 0;
+			if (!(wParam >= 'А' && wParam <= 'Я' || wParam == ' ')) {
+				wsprintf(buf, TEXT("%c"), wParam);
+			}
+			Check_Level_1(buf, i);
+			Check_Level_2(buf, i);
+			Check_Level_3(buf, i);
+			Check_Level_4(buf, i);
+			Check_Level_5(buf, i);
+			i++;			
+		}
+	}
+	return CallNextHookEx(hHook, idCode, wParam, lParam);
 }
 
 DWORD WINAPI TimeFunc(LPVOID lp) {
@@ -96,20 +197,32 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		hEnterText = GetDlgItem(hWnd, IDC_ENTERTEXT);
 		hFinish = GetDlgItem(hWnd, IDOK);
 		hDialog = hWnd;
-		hButton16 = GetDlgItem(hWnd, IDC_BUTTON16);
 
-		// Получим дескриптор экземпляра приложения
-		HINSTANCE hInst = GetModuleHandle(NULL);
+		hButtonA = GetDlgItem(hWnd, IDC_BUTTON16);
+		hButtonO = GetDlgItem(hWnd, IDC_BUTTON19);
+		hButtonV = GetDlgItem(hWnd, IDC_BUTTON15);
+		hButtonL = GetDlgItem(hWnd, IDC_BUTTON20);
+		hButtonP = GetDlgItem(hWnd, IDC_BUTTON17);
+		hButtonR = GetDlgItem(hWnd, IDC_BUTTON18);
+		hButtonK = GetDlgItem(hWnd, IDC_BUTTON4);
+		hButtonE = GetDlgItem(hWnd, IDC_BUTTON5);
+		hButtonN = GetDlgItem(hWnd, IDC_BUTTON6);
+		hButtonG = GetDlgItem(hWnd, IDC_BUTTON7);
+		hSpace = GetDlgItem(hWnd, IDC_SPACE);
+
+		pNID = new NOTIFYICONDATA;
+		HINSTANCE hInst = GetModuleHandle(NULL); // Получим дескриптор экземпляра приложения
+		hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+		SetClassLong(hDialog, GCL_HICON, LONG(hIcon)); // устанавливаем иконку в главном окне приложения
 		pNID->cbSize = sizeof(NOTIFYICONDATA); //размер структуры
 		memset(pNID, 0, sizeof(NOTIFYICONDATA)); //Обнуление структуры
-		pNID->hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)); //загружаем пользовательскую иконку
-		SetClassLong(hDialog, GCL_HICON, LONG(hIcon)); // устанавливаем иконку в главном окне приложения
+		pNID->hIcon = hIcon; //загружаем пользовательскую иконку
 		pNID->hWnd = hDialog; //дескриптор окна, которое будет получать уведомляющие сообщения, ассоциированные с иконкой в трэе.	
 		pNID->uCallbackMessage = WM_ICON;
 		pNID->uFlags = NIF_TIP | NIF_ICON | NIF_MESSAGE | NIF_INFO;
 		pNID->uID = ID_TRAYICON;
 
-		
+
 		TCHAR GUID[] = TEXT("{D99CD3E0-670D-4def-9B74-99FD7E793DFB}");
 		hMutex = CreateMutex(NULL, FALSE, GUID);
 		DWORD dwAnswer = WaitForSingleObject(hMutex, 0);
@@ -198,7 +311,8 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 			}
-			
+
+			hHook = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, NULL, GetCurrentThreadId());
 		}
 
 		if (LPARAM(wParam) == IDOK) {
@@ -227,20 +341,11 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SendMessage(hEdit1, WM_SETTEXT, 0, LPARAM(str_time));
 			SendMessage(hEdit2, WM_SETTEXT, 0, LPARAM(str_error));
 			SendMessage(hEdit3, WM_SETTEXT, 0, LPARAM(str_points));
-
-		}
-
-	}
-	break;
-
-	case WM_SIZE: {
-		if (message == SIZE_MINIMIZED) {
-			ShowWindow(hWnd, SW_HIDE); // Прячем окно
-			Shell_NotifyIcon(NIM_ADD, pNID); // Добавляем иконку в трэй
 		}
 	}
 	break;
-	//HANDLE_MSG(hWnd, WM_SIZE, Cls_OnSize);
+
+	HANDLE_MSG(hWnd, WM_SIZE, Cls_OnSize);
 
 	case WM_CLOSE:
 		EndDialog(hWnd, 0);
